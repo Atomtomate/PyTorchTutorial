@@ -31,11 +31,11 @@ class ConvEncoder(nn.Module):
             activation,
             # 8 x 20 x 20 = 3200
             nn.Flatten(),
-            nn.Linear(3200, latent_dim)
+            nn.Linear(3200, 2*latent_dim)
         )
 
     def forward(self, x):
-        self.encoder(x)
+        return self.encoder(x)
         
         
 class ConvDecoder(nn.Module):
@@ -57,7 +57,7 @@ class ConvDecoder(nn.Module):
             )
         
     def forward(self, x):
-        self.decoder(x)
+        return self.decoder(x)
 
 class CVAE2(L.LightningModule):
     """
@@ -78,21 +78,22 @@ class CVAE2(L.LightningModule):
 
         self.encoder = ConvEncoder(self.latent_dim, self.activation)
         self.decoder = ConvDecoder(self.latent_dim, self.activation)
-        self.mean_layer = nn.Linear(self.latent_dim, 2)
-        self.logvar_layer = nn.Linear(self.latent_dim, 2)
+        #self.mean_layer = nn.Linear(self.latent_dim, 2)
+        #self.logvar_layer = nn.Linear(self.latent_dim, 2)
         
     def encode(self, x):
         x = self.encoder(x)
-        mean, logvar = self.mean_layer(x), self.logvar_layer(x)
-        return mean, logvar
+        #mean, logvar = self.mean_layer(x), self.logvar_layer(x)
+        
+        return x
     
     def reparameterization(self, mean, var):
-        epsilon = torch.randn_like(var).to(self.c_device)      
+        epsilon = torch.randn_like(var).to(self.c_device)
         z = mean + var*epsilon
         return z
 
     def forward(self, x):
-        mean, logvar = self.encode(x)
+        mean, logvar = torch.split(self.encode(x), self.latent_dim , dim=1)
         y = self.reparameterization(mean, logvar)
         x_hat = self.decoder(y)
         return x_hat
