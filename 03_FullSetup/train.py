@@ -15,7 +15,7 @@ from data import CVAE_MNIST_Data
 dtype_default = torch.float32
 torch.set_float32_matmul_precision("medium")
 torch.set_default_dtype(dtype_default)
-
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 
@@ -26,7 +26,7 @@ def main(args):
     config = json.load(open(join(dirname(abspath(__file__)),'config.json')))
     torch.manual_seed(config['seed'])
     dataMod = CVAE_MNIST_Data(config)
-    model = CVAE2(config) 
+    model = CVAE2(config, device) 
     lr_monitor = LearningRateMonitor(logging_interval='step')
     early_stopping = EarlyStopping(
             monitor="val_loss",

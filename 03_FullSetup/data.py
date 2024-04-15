@@ -2,7 +2,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.datasets import MNIST
 from torchvision import datasets, transforms
 import torch
-import lightning as L
+import pytorch_lightning as pl
 
 
 # split the train set into two
@@ -10,7 +10,7 @@ seed = torch.Generator().manual_seed(42)
 
 
 
-class CVAE_MNIST_Data(L.LightningDataModule):
+class CVAE_MNIST_Data(pl.LightningDataModule):
     def __init__(self, config):
         super().__init__()
 
@@ -28,14 +28,14 @@ class CVAE_MNIST_Data(L.LightningDataModule):
         transform = transforms.Compose([transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,))
                                 ])
-        if stage == 'fit':
-            self.train_dataset = datasets.MNIST(root=self.data_dir, train=True, download=True, transform=transform)
-            self.train_set_size = int(len(self.train_dataset) * 0.8)
-            self.val_set_size = len(self.train_dataset) - self.train_set_size
-        if stage == 'test':
-            self.train_dataset, self.val_dataset = random_split(self.train_set, [self.train_set_size, self.val_set_size])
-        if stage == 'predict':
-            self.test_dataset = datasets.MNIST(root= self.data_dir, train=False, transform=transform, num_workers=8, persistent_workers=True)
+
+        self.train_dataset = datasets.MNIST(root=self.data_dir, train=True, download=True, transform=transform)
+        self.train_set_size = int(len(self.train_dataset) * 0.8)
+        self.val_set_size = len(self.train_dataset) - self.train_set_size
+    
+        self.train_dataset, self.val_dataset = random_split(self.train_dataset, [self.train_set_size, self.val_set_size])
+    
+        self.test_dataset = datasets.MNIST(root= self.data_dir, train=False, download=True, transform=transform)
         
 
     def train_dataloader(self):

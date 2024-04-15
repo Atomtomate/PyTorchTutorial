@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as L
+from torch.nn import functional as F
 
 
 def activation_str(act_str: str):
@@ -65,12 +66,13 @@ class CVAE2(L.LightningModule):
     https://www.tensorflow.org/tutorials/generative/cvae
     https://skannai.medium.com/what-are-convolutional-variational-auto-encoders-cvae-515f4fedc23
     """
-    def __init__(self, config):
+    def __init__(self, config, device):
         super().__init__()
 
         self.activation = activation_str(config['AE_activation'])
         self.latent_dim = config['latent_dim']
         self.lossF = nn.MSELoss()
+        self.c_device = device
         
         #TODO self.save_hyperparams
 
@@ -85,7 +87,7 @@ class CVAE2(L.LightningModule):
         return mean, logvar
     
     def reparameterization(self, mean, var):
-        epsilon = torch.randn_like(var).to(device)      
+        epsilon = torch.randn_like(var).to(self.c_device)      
         z = mean + var*epsilon
         return z
 
