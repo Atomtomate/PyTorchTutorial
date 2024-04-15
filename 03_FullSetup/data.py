@@ -1,49 +1,61 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader, random_split
+from torchvision.datasets import MNIST
 from torchvision import datasets, transforms
 import torch
-import numpy as np
+import lightning as L
 
-tf = Compose([ToTensor(), Lambda(torch.flatten)])
-train_set = datasets.MNIST(root="MNIST", download=True, train=True, transform=tf)
-test_set = datasets.MNIST(root="MNIST", download=True, train=False, transform=tf)
-
-# use 20% of training data for validation
-train_set_size = int(len(train_set) * 0.8)
-val_set_size = len(train_set) - train_set_size
 
 # split the train set into two
 seed = torch.Generator().manual_seed(42)
 
-train_set, val_set = data.random_split(train_set, [train_set_size, val_set_size], generator=seed)
-train_loader = utils.data.DataLoader(train_set, batch_size=batch_size, num_workers=8, persistent_workers=True, shuffle=True)
-test_loader = utils.data.DataLoader(test_set, batch_size=1, num_workers=8, persistent_workers=True, shuffle=False)
-val_loader = utils.data.DataLoader(val_set, batch_size=batch_size, num_workers=8, persistent_workers=True, shuffle=False)
 
-num_data_workers
-class Dataset_CVAE_MNIST(Dataset):
+
+class CVAE_MNIST_Data(L.LightningDataModule):
     def __init__(self, config):
+        super().__init__()
+
+        self.prepare_data_per_node = True
+        self.train_batch_size = config['train_batch_size']
+        self.val_batch_size = config['val_batch_size']
+        self.test_batch_size = config['test_batch_size']
+        self.data_dir = config['data_dir']
+
+    def setup(self, stage: str):
+        """
+        Download and transform datasets. 
+        """
         # Unlike in example 02, we do NOT transform the image into a vector, since we wan tto apply 2D convolutions
         transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize((0.1307,), (0.3081,))
-                                        ])
+                                transforms.Normalize((0.1307,), (0.3081,))
+                                ])
+        if stage == 'fit':
+            self.train_dataset = datasets.MNIST(root=self.data_dir, train=True, download=True, transform=transform)
+            self.train_set_size = int(len(self.train_dataset) * 0.8)
+            self.val_set_size = len(self.train_dataset) - self.train_set_size
+        if stage == 'test':
+            self.train_dataset, self.val_dataset = random_split(self.train_set, [self.train_set_size, self.val_set_size])
+        if stage == 'predict':
+            self.test_dataset = datasets.MNIST(root= self.data_dir, train=False, transform=transform, num_workers=8, persistent_workers=True)
+        
 
-        train_dataset = datasets.MNIST(root ='data', train=True, download=True, transform=transform)
-        # use 20% of training data for validation
-        train_set_size = int(len(train_dataset) * 0.8)
-        val_set_size = len(train_dataset) - train_set_size
-        train_dataset, val_dataset = data.random_split(train_set, [train_set_size, val_set_size])
-        test_dataset = datasets.MNIST(root = 'data', train=False, transform=transform, num_workers=8, persistent_workers=True)
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.train_batch_size, num_workers=8, persistent_workers=True, shuffle=True)
 
-        train_loader = DataLoader(train_dataset, batch_size=config['train_batch_size'], num_workers=8, persistent_workers=True, shuffle=True)
-        val_loader  = DataLoader(train_dataset, batch_size=config['train_batch_size'], num_workers=8, persistent_workers=True, shuffle=True)
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.train_batch_size, num_workers=8, persistent_workers=True, shuffle=False)
+    
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.test_batch_size, num_workers=8, persistent_workers=True, shuffle=False)
+    
+    #def state_dict(self):
+    #    # track whatever you want here
+    #    state = {"current_train_batch_index": self.current_train_batch_index}
+    #    return state
 
+    #def load_state_dict(self, state_dict):
+    #    # restore the state based on what you tracked in (def state_dict)
+    #    self.current_train_batch_index = state_dict["current_train_batch_index"]
 
-
-        test_loader = DataLoader( test_dataset, batch_size=config['test_batch_size'], shuffle=False)
-
-
-    def __len__(self):
-        return self.data_in.shape[0]
-
-    def __getitem__(self, idx):
-        return self.data_in[idx], self.data_target[idx]
+    # def transfer_batch_to_device(self, batch, device, dataloader_idx)
+    # This lets you specify transformations when transfering data to a device
+    # more hooks are available here (mostly useful for multi node setups): https://lightning.ai/docs/pytorch/stable/data/datamodule.html

@@ -5,12 +5,9 @@
 
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
-from torch.utils.data import DataLoader
-from torchvision.datasets import MNIST
 import torch.optim as optim
 import pytorch_lightning as L
-from torchvision import transforms
+
 
 def activation_str(act_str: str):
     if act_str.lower() == "relu":
@@ -21,9 +18,9 @@ def activation_str(act_str: str):
         return nn.LeakyReLU()
 
 
-class Encoder(nn.Module):
+class ConvEncoder(nn.Module):
     def __init__(self, latent_dim, activation):
-        super(Encoder,self).__init__()
+        super(ConvEncoder,self).__init__()
         self.encoder = nn.Sequential(
             # 28 x 28
             nn.Conv2d(1, 4, kernel_size=5),
@@ -40,9 +37,9 @@ class Encoder(nn.Module):
         self.encoder(x)
         
         
-class Decoder(nn.Module):
+class ConvDecoder(nn.Module):
     def __init__(self, latent_dim, activation): 
-        super(Decoder,self).__init__()      
+        super(ConvDecoder,self).__init__()      
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 400),
             # 400
@@ -61,7 +58,7 @@ class Decoder(nn.Module):
     def forward(self, x):
         self.decoder(x)
 
-class CVAE(L.LightningModule):
+class CVAE2(L.LightningModule):
     """
     Model taken from this Tutorial: 
     https://bytepawn.com/building-a-pytorch-autoencoder-for-mnist-digits.html and
@@ -77,8 +74,8 @@ class CVAE(L.LightningModule):
         
         #TODO self.save_hyperparams
 
-        self.encoder = Encoder(self.latent_dim, self.activation)
-        self.decoder = Decoder(self.latent_dim, self.activation)
+        self.encoder = ConvEncoder(self.latent_dim, self.activation)
+        self.decoder = ConvDecoder(self.latent_dim, self.activation)
         self.mean_layer = nn.Linear(self.latent_dim, 2)
         self.logvar_layer = nn.Linear(self.latent_dim, 2)
         
@@ -126,7 +123,7 @@ class CVAE(L.LightningModule):
         #pred = outputs.data.max(1)[1]  # get the index of the max log-probability
         #incorrect = pred.ne(targets.long().data).cpu().sum()
         #err = incorrect.item()/targets.numel()
-        v#al_acc = torch.tensor(1.0-err)
+        #val_acc = torch.tensor(1.0-err)
 
         self.log("val_loss", loss, prog_bar=True)
         return loss
@@ -140,25 +137,6 @@ class CVAE(L.LightningModule):
     #    print('Val Loss:', round(avg_loss.item(),2), 'Val Accuracy: %f %%' % Accuracy) 
     #    return {'avg_val_loss': avg_loss, 'progress_bar': tensorboard_logs}
 
-    
-    # Load, split and transform PILimage images into normalized tensors in range [-1, 1]. 
-    def prepare_data(self):
-
-        transform=transforms.Compose([transforms.ToTensor(), 
-                                      transforms.Normalize((0.1307,), (0.3081,))])
-          
-
-        train_dataset = MNIST('data', train=True, download=True, transform=transform)
-        test_dataset = MNIST('data', train=False, download=True, transform=transform)
-        
-        self.mnist_train, self.mnist_val = train_dataset, test_dataset
-
-    #Create train loader
-    def train_dataloader(self):
-        return DataLoader(self.mnist_train, batch_size=64, num_workers=2)
-    #Create validation loader
-    def val_dataloader(self):
-        return DataLoader(self.mnist_val, batch_size=128, num_workers=2)
 
     # Can return multiple optimizers and scheduling alogoithms 
     # Here using Stuochastic Gradient Descent

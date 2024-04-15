@@ -1,3 +1,5 @@
 MNIST
 lightning_logs
 *.pyc
+03_FullSetup/data
+data
