@@ -24,8 +24,11 @@ Here we will use [Conda](https://conda.io/projects/conda/en/latest/index.html).
 After installing Conda we:
  - [create an environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) for this project using `conda create --name MLTut` (you can of course change the name).
  - activate the environment with `activate MLTut` (it should be active from the start, but you may have to do this after reboots)
- - install pip using `conda install pip`
- - install packages using `pip install <name>`. For now, you can try `pip install ipython lightning lightning-utilities matplotlib numpy torch torchvision scipy tensorboard json`.
+ Run either:
+    - install pip using `conda install pip`
+    - install packages using `pip install <name>`. For now, you can try `pip install ipython lightning lightning-utilities matplotlib numpy torch torchvision scipy tensorboard`.
+Or:
+    - `conda install ipython lightning lightning-utilities matplotlib numpy pytorch torchvision scipy tensorboard`.
 
 For the live tutorial, we will use [VScode](https://code.visualstudio.com/Download).
 
