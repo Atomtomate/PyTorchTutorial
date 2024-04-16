@@ -26,8 +26,11 @@ After installing Conda we:
  - activate the environment with `activate MLTut` (it should be active from the start, but you may have to do this after reboots).
 - install pip using `conda install pip`
 - [Optional]: install cuda via `conda install cuda --channel nvidia/label/cuda-12.3 -c conda-forge`, replacing the cuda version (the commands to find your CUDA version for your operating system are 
-- Install torch, if you do not want to enable cuda support, `pip install torch` is sufficient, otherwise the install command is available [here](https://pytorch.org/get-started/locally/)
-- install additional packages using `pip install <name>`. For now, you can try `pip install ipython lightning lightning-utilities matplotlib numpy scipy tensorboard`.
+- Install torch, if you do not want to enable cuda support, `pip install torch` is sufficient, otherwise, the install command is available [here](https://pytorch.org/get-started/locally/)
+- install additional packages using `pip install <name>`. For now, you can try `pip install ipython lightning lightning-utilities matplotlib numpy torchvision scipy tensorboard`.
+Or:
+    available online)
+    - `conda install ipython lightning lightning-utilities matplotlib numpy torchvision scipy tensorboard`.
 
 
 https://pytorch.org/get-started/locally/

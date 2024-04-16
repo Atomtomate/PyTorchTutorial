@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as L
 from torch.nn import functional as F
+import torchvision
 
 from typing import Dict, Iterable, Callable
 
@@ -99,9 +100,9 @@ class LatentZ(nn.Module):
     
 class Encoder(nn.Module):
     def __init__(self, input_dim=784, hidden_dim=200, latent_dim=20, activation=nn.LeakyReLU(0.2)):
-        super(ConvEncoder,self).__init__()
+        super(Encoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Flatter(),
+            nn.Flatten(),
             nn.Linear(input_dim, hidden_dim),
             activation,
             nn.Linear(hidden_dim, latent_dim),
@@ -112,7 +113,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, input_dim=784, hidden_dim=200, latent_dim=20, activation=nn.LeakyReLU(0.2)):
-        super(ConvEncoder,self).__init__()
+        super(Decoder, self).__init__()
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
             activation,
@@ -121,7 +122,7 @@ class Decoder(nn.Module):
             )
 
     def forward(self, x):
-        return self.ecoder(x)
+        return self.decoder(x)
 
 
 class CVAE2(L.LightningModule):
@@ -132,7 +133,7 @@ class CVAE2(L.LightningModule):
     https://skannai.medium.com/what-are-convolutional-variational-auto-encoders-cvae-515f4fedc23
     """
     def __init__(self, config, device, mode='linear'):
-        super().__init__()
+        super(CVAE2, self).__init__()
 
         self.activation = activation_str(config['AE_activation'])
         self.latent_dim = config['latent_dim']
@@ -158,14 +159,12 @@ class CVAE2(L.LightningModule):
             #TODO: hidden size hardcoded from default config, compute this here
             self.latent_z = LatentZ(64*7*7, self.z_dim)#
         elif mode == 'linear':
-            self.encoder = Encoder(
-                                   input_dim=config['linear_AE_input_dim'],
+            self.encoder = Encoder(input_dim=config['linear_AE_input_dim'],
                                    hidden_dim=config['linear_AE_hidden_dim'], 
                                    latent_dim=config['linear_AE_latent_dim'], 
                                    activation=self.activation
                                    ) 
-            self.decoder = Decoder(
-                                   input_dim=config['linear_AE_input_dim'],
+            self.decoder = Decoder(input_dim=config['linear_AE_input_dim'],
                                    hidden_dim=config['linear_AE_hidden_dim'], 
                                    latent_dim=config['linear_AE_latent_dim'], 
                                    activation=self.activation
@@ -226,6 +225,26 @@ class CVAE2(L.LightningModule):
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=5e-4)
         return optimizer
+    
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        out = self(batch)
+        loss = self.loss(out, y)
+
+        # log 6 example images
+        # or generated text... or whatever
+        if batch_idx == 0:
+            sample_imgs = x[:6]
+            grid = torchvision.utils.make_grid(sample_imgs)
+            self.logger.experiment.add_image('example_images', grid, 0)
+
+        # calculate acc
+        labels_hat = torch.argmax(out, dim=1)
+        test_acc = torch.sum(y == labels_hat).item() / (len(y) * 1.0)
+
+        # log the outputs!
+        self.log_dict({'test_loss': loss, 'test_acc': test_acc})
+
     
 class ConvClassifier(nn.Module):
     def __init__(self):

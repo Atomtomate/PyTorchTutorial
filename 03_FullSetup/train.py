@@ -1,4 +1,3 @@
-
 import sys
 sys.dont_write_bytecode = True
 
@@ -31,9 +30,6 @@ def main(args):
     dataMod = CVAE_MNIST_Data(config)
     model = CVAE2(config, device, mode = 'conv') 
     lr_monitor = LearningRateMonitor(logging_interval='step')
-    early_stopping = EarlyStopping(
-            monitor="val_loss",
-            patience=40)
     logger = TensorBoardLogger("lightning_logs", name=config["model_name"])
     val_ckeckpoint = ModelCheckpoint( # saved in `trainer.default_root_dir`/`logger.version`/`checkpoint_callback.dirpath`
             filename="{epoch}-{step}-{val_loss:.8f}",
@@ -50,7 +46,7 @@ def main(args):
                                     )
     accumulator = GradientAccumulationScheduler(scheduling={0: 256, 8: 128, 12: 64, 16: 32, 24: 16, 32: 8, 40: 4, 48: 1})
     callbacks = [lr_monitor, early_stopping, val_ckeckpoint, swa, accumulator]
-    trainer = Trainer(enable_checkpointing=True, max_epochs=config["epochs"], accelerator="cuda",
+    trainer = Trainer(enable_checkpointing=True, max_epochs=config["epochs"],
                       callbacks=callbacks, logger=logger, gradient_clip_val=0.5) #precision="16-mixed", 
 
 

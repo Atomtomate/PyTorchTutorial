@@ -4,3 +4,4 @@ lightning_logs
 03_FullSetup/data
 data
 .lr_find*
+*.pdf
