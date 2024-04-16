@@ -2,7 +2,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.datasets import MNIST
 from torchvision import datasets, transforms
 import torch
-import pytorch_lightning as pl
+import pytorch_lightning as L
 
 
 # split the train set into two
@@ -10,7 +10,7 @@ seed = torch.Generator().manual_seed(42)
 
 
 
-class CVAE_MNIST_Data(pl.LightningDataModule):
+class CVAE_MNIST_Data(L.LightningDataModule):
     def __init__(self, config):
         super().__init__()
 
@@ -26,7 +26,7 @@ class CVAE_MNIST_Data(pl.LightningDataModule):
         """
         # Unlike in example 02, we do NOT transform the image into a vector, since we wan tto apply 2D convolutions
         transform = transforms.Compose([transforms.ToTensor(),
-                                transforms.Normalize((0.1307,), (0.3081,))
+                                transforms.Normalize((0.5),(1.0)),#(0.1307,), (0.3081,)),
                                 ])
 
         self.train_dataset = datasets.MNIST(root=self.data_dir, train=True, download=True, transform=transform)

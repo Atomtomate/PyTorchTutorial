@@ -10,7 +10,7 @@ As such, the written documentation may be lacking in parts.
 We will first go over the Fundamentals of supervised learning and then apply those to some simple examples, using PyTorch.
 After that, we will move on to PyTorch Lightning and experiment with more advanced models, also introducing more tools like Tensorboard and the Learning Interpretability Tool.
 Using this more convenient setup, we will explore the usual workflow of developing, refining (simple) machine learning models and interpreting their behavior.
-My goal is to give you enough hands-on experience to be able to start your own projects right away.
+My goal is to give you enough hands-on experience to be able to start your projects right away.
 During this process, I will introduce common phrases and explain them.
 
 ## Directory structure
@@ -18,17 +18,18 @@ During this process, I will introduce common phrases and explain them.
 # Setup
 
 You will need a Python environment with a lot of additional packages.
-In order to avoid conflicts with other projects, one usually creates environments for each of them.
+To avoid conflicts with other projects, one usually creates environments for each of them.
 Here we will use [Conda](https://conda.io/projects/conda/en/latest/index.html).
 
 After installing Conda we:
- - [create an environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) for this project using `conda create --name MLTut` (you can of cause change the name).
+ - [create an environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) for this project using `conda create --name MLTut` (you can of course change the name).
  - activate the environment with `activate MLTut` (it should be active from the start, but you may have to do this after reboots)
- - install packages using `pip install <name>`. For now, you can try `pip install ipython lightning lightning-utilities matplotlib numpy torch pytorch-lightning torchvision scipy tensorboard torchview json`.
+ - install pip using `conda install pip`
+ - install packages using `pip install <name>`. For now, you can try `pip install ipython lightning lightning-utilities matplotlib numpy torch torchvision scipy tensorboard json`.
 
 For the live tutorial, we will use [VScode](https://code.visualstudio.com/Download).
 
-After installation, we need to setup a couple of things and [install extensions](https://code.visualstudio.com/docs/editor/extension-marketplace).
+After installation, we need to set up a couple of things and [install extensions](https://code.visualstudio.com/docs/editor/extension-marketplace).
 You can easily search and install all plugins from the tab inside VSCode, in case you run into problems I will provide links here anyway:
 
  - [Live Share](https://code.visualstudio.com/learn/collaboration/live-share)

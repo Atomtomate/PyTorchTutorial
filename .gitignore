@@ -3,3 +3,4 @@ lightning_logs
 *.pyc
 03_FullSetup/data
 data
+.lr_find*
