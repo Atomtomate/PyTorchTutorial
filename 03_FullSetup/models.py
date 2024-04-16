@@ -42,7 +42,6 @@ class ConvEncoder(nn.Module):
             activation,
             nn.Conv2d(64,64,kernel_size,padding=1,stride=stride),
             nn.BatchNorm2d(64),
-            activation,
             nn.Flatten()
         )
 
@@ -97,9 +96,9 @@ class LatentZ(nn.Module):
         return std * eps + mu, mu, logvar
 
     
-class Encoder(nn.Module):
+class LinEncoder(nn.Module):
     def __init__(self, input_dim=784, hidden_dim=400, latent_dim=200, activation=nn.LeakyReLU(0.2)):
-        super(Encoder, self).__init__()
+        super(LinEncoder, self).__init__()
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             activation,
@@ -108,14 +107,13 @@ class Encoder(nn.Module):
     def forward(self, x):
         return self.encoder(x.view(-1, 784))
 
-class Decoder(nn.Module):
+class LinDecoder(nn.Module):
     def __init__(self, input_dim=784, hidden_dim=400, latent_dim=200, activation=nn.LeakyReLU(0.2)):
-        super(Decoder, self).__init__()
+        super(LinDecoder, self).__init__()
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
             activation,
             nn.Linear(hidden_dim, input_dim),
-            nn.Sigmoid()
             )
 
     def forward(self, x):
@@ -136,8 +134,8 @@ class CVAE2(L.LightningModule):
         self.latent_dim = config['latent_dim']
         self.c_device = device
         self.sigmoid = nn.Sigmoid()
-        self.log_likelihood = nn.BCEWithLogitsLoss(reduction='sum')
-        #nn.MSELoss()
+        self.log_likelihood = nn.MSELoss()
+        #nn.BCEWithLogitsLoss(reduction='sum')
         self.mode= mode
 
         #TODO self.save_hyperparams
@@ -157,12 +155,12 @@ class CVAE2(L.LightningModule):
             #TODO: hidden size hardcoded from default config, compute this here
             self.latent_z = LatentZ(64*7*7, self.z_dim)#
         elif mode == 'linear':
-            self.encoder = Encoder(input_dim=config['linear_AE_input_dim'],
+            self.encoder = LinEncoder(input_dim=config['linear_AE_input_dim'],
                                    hidden_dim=config['linear_AE_hidden_dim'], 
                                    latent_dim=config['linear_AE_latent_dim'], 
                                    activation=self.activation
                                    ) 
-            self.decoder = Decoder(input_dim=config['linear_AE_input_dim'],
+            self.decoder = LinDecoder(input_dim=config['linear_AE_input_dim'],
                                    hidden_dim=config['linear_AE_hidden_dim'], 
                                    latent_dim=config['linear_AE_latent_dim'], 
                                    activation=self.activation

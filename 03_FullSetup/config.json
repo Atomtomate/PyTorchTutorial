@@ -9,7 +9,7 @@
     "train_batch_size": 4,
     "val_batch_size": 4,
     "test_batch_size": 4,
-    "lr" : 0.001,
+    "lr" : 0.1,
     "lr_schedule": 20,
     "gamma": 0.7,
     "momentum": 0.9,
@@ -19,7 +19,7 @@
     "seed": 42,
     "linear_AE_input_dim": 784,
     "linear_AE_hidden_dim": 400, 
-    "linear_AE_latent_dim": 200,
+    "linear_AE_latent_dim": 2,
     "conv_AE_kernel_size": 3,
     "conv_AE_stride": 2,
     "conv_AE_z_dim": 2
