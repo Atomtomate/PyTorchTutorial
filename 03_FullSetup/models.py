@@ -73,7 +73,6 @@ class ConvDecoder(nn.Module):
             nn.BatchNorm2d(32),
             activation,
             nn.ConvTranspose2d(32, 1, kernel_size, padding=1),
-            nn.Tanh()
             )
 
     def forward(self, x):
@@ -99,26 +98,24 @@ class LatentZ(nn.Module):
 
     
 class Encoder(nn.Module):
-    def __init__(self, input_dim=784, hidden_dim=200, latent_dim=20, activation=nn.LeakyReLU(0.2)):
+    def __init__(self, input_dim=784, hidden_dim=400, latent_dim=200, activation=nn.LeakyReLU(0.2)):
         super(Encoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Flatten(),
             nn.Linear(input_dim, hidden_dim),
             activation,
-            nn.Linear(hidden_dim, latent_dim),
-            activation
+            nn.Linear(hidden_dim, latent_dim)
             )
     def forward(self, x):
         return self.encoder(x.view(-1, 784))
 
 class Decoder(nn.Module):
-    def __init__(self, input_dim=784, hidden_dim=200, latent_dim=20, activation=nn.LeakyReLU(0.2)):
+    def __init__(self, input_dim=784, hidden_dim=400, latent_dim=200, activation=nn.LeakyReLU(0.2)):
         super(Decoder, self).__init__()
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
             activation,
             nn.Linear(hidden_dim, input_dim),
-            activation
+            nn.Sigmoid()
             )
 
     def forward(self, x):
@@ -139,11 +136,12 @@ class CVAE2(L.LightningModule):
         self.latent_dim = config['latent_dim']
         self.c_device = device
         self.sigmoid = nn.Sigmoid()
-        self.log_likelihood = nn.MSELoss()
+        self.log_likelihood = nn.BCEWithLogitsLoss(reduction='sum')
+        #nn.MSELoss()
         self.mode= mode
 
         #TODO self.save_hyperparams
-
+        
         if mode == 'conv':
             self.z_dim=config['conv_AE_z_dim']
             self.encoder = ConvEncoder(self.latent_dim, 
@@ -176,6 +174,7 @@ class CVAE2(L.LightningModule):
         self.decoder.apply(self.init_weights)
 
         self.lr = config['lr']
+        self.save_hyperparameters()
 
     def init_weights(self, layer):
         if isinstance(layer, nn.Linear):
@@ -189,15 +188,15 @@ class CVAE2(L.LightningModule):
 
     def forward(self, x):
         p_x = self.encode(x)
-        z, mu, logvar= self.latent_z(p_x)
+        z, mu, logvar = self.latent_z(p_x)
         x_hat = self.decoder(z)
         return x_hat, mu, logvar
     
     def loss_function(self, x, x_hat, mean, logvar):
         # Reproduction loss of image
         
-        #reproduction_loss = F.binary_cross_entropy(x_hat, x, reduction='sum')
-        reproduction_loss = self.log_likelihood(x_hat, x)
+        reproduction_loss = self.log_likelihood(x, x_hat)
+        #reproduction_loss = self.log_likelihood(x, x_hat)
         # Kullback-Leibler divergence loss to maximize the evidence lower bound on the marginal log-likelihood
         # https://mbernste.github.io/posts/elbo/
         KLD = - 0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp())
@@ -209,17 +208,21 @@ class CVAE2(L.LightningModule):
     def training_step(self, train_batch, batch_idx):
         inputs, targets = train_batch
         outputs, mean, logvar = self(inputs)
-        reproduction_loss, KLD = self.loss_function(inputs, outputs, mean, logvar)
+        reproduction_loss, KLD = self.loss_function(inputs.view(-1, 784), outputs, mean, logvar)
         loss = reproduction_loss + KLD
         self.log("train_loss", loss, prog_bar=False)
+        self.log("train_reproduction_loss", reproduction_loss, prog_bar=False)
+        self.log("train_KLD", KLD, prog_bar=False)
         return loss
 
     def validation_step(self, train_batch, batch_idx):
         inputs, targets = train_batch
         outputs, mean, logvar = self(inputs)
-        reproduction_loss, KLD = self.loss_function(inputs, outputs, mean, logvar)
+        reproduction_loss, KLD = self.loss_function(inputs.view(-1, 784), outputs, mean, logvar)
         loss = reproduction_loss + KLD
         self.log("val_loss", loss, prog_bar=True)
+        self.log("val_reproduction_loss", reproduction_loss, prog_bar=False)
+        self.log("val_KLD", KLD, prog_bar=False)
         return loss
 
     def configure_optimizers(self):
@@ -227,9 +230,13 @@ class CVAE2(L.LightningModule):
         return optimizer
     
     def test_step(self, batch, batch_idx):
-        x, y = batch
-        out = self(batch)
-        loss = self.loss(out, y)
+        inputs, targets = batch
+        outputs, mean, logvar = self(inputs)
+        reproduction_loss, KLD = self.loss_function(inputs, outputs, mean, logvar)
+        loss = reproduction_loss + KLD
+        self.log("test_loss", loss, prog_bar=True)
+        self.log("test_reproduction_loss", reproduction_loss, prog_bar=False)
+        self.log("test_KLD", KLD, prog_bar=False)
 
         # log 6 example images
         # or generated text... or whatever
@@ -243,7 +250,10 @@ class CVAE2(L.LightningModule):
         test_acc = torch.sum(y == labels_hat).item() / (len(y) * 1.0)
 
         # log the outputs!
-        self.log_dict({'test_loss': loss, 'test_acc': test_acc})
+        self.log_dict({'test_loss': loss, 
+                       'test_acc': test_acc, 
+                       'test_reproduction_loss': reproduction_loss,
+                       'test_KLD': KLD})
 
     
 class ConvClassifier(nn.Module):

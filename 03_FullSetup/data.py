@@ -26,7 +26,7 @@ class CVAE_MNIST_Data(L.LightningDataModule):
         """
         # Unlike in example 02, we do NOT transform the image into a vector, since we wan tto apply 2D convolutions
         transform = transforms.Compose([transforms.ToTensor(),
-                                transforms.Normalize((0.5),(1.0)),#(0.1307,), (0.3081,)),
+                                transforms.Normalize((0.1307,), (0.3081,)),
                                 ])
 
         self.train_dataset = datasets.MNIST(root=self.data_dir, train=True, download=True, transform=transform)
